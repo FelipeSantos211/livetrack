@@ -49,18 +49,20 @@ Prefixo: `/tracking`
 
 - POST /tracking
   - Cria um novo tracking.
-  - Retorna o objeto Tracking criado.
+  - Retorna `TrackingDTO` com `id`, `status` e `createdAt`.
 
 - POST /tracking/{id}/event
   - Adiciona um evento ao tracking {id}.
-  - Corpo: JSON com campos de TrackingEvent (por ex.: latitude, longitude, etc.).
-  - Retorna o TrackingEvent salvo.
+  - Corpo: JSON com `latitude` e `longitude`.
+  - Retorna `TrackingEventDTO` com `id`, `trackingId`, `latitude`, `longitude` e `eventTime`.
 
 - GET /tracking/{id}
   - Retorna o último evento do tracking {id}.
+  - Resposta: `TrackingEventDTO`.
 
 - GET /tracking/{id}/history
   - Retorna todo o histórico de eventos do tracking {id}.
+  - Resposta: lista de `TrackingEventDTO` ordenada por `eventTime`.
 
 Exemplo curl (criar tracking):
 ```bash
@@ -71,6 +73,20 @@ Exemplo curl (adicionar evento):
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{"latitude":-23.5,"longitude":-46.6}' http://localhost:8080/tracking/1/event
 ```
+
+## Respostas de erro
+Quando a API retorna erro, o projeto responde com um JSON simples, sem `ProblemDetail` do Spring:
+
+```json
+{
+  "status": 404,
+  "error": "404 NOT_FOUND",
+  "message": "Tracking not found",
+  "timestamp": "2026-07-29T12:34:56"
+}
+```
+
+Esse formato é aplicado pelo handler global em `src/main/java/com/felipesantos/livetrack/exception/GlobalExceptionHandler.java`.
 
 ## WebSocket
 O projeto envia atualizações por WebSocket para o tópico:
