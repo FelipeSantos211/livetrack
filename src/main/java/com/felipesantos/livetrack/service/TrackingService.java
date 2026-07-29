@@ -59,6 +59,7 @@ public class TrackingService {
     }
 
     public TrackingEventDTO getLastLocation(Long trackingId) {
+        trackingExists(trackingId);
         TrackingEvent lastEvent = eventRepository.findTopByTracking_IdOrderByEventTimeDesc(trackingId);
         if (lastEvent == null) {
             throw new ResponseStatusException(
@@ -74,6 +75,7 @@ public class TrackingService {
     }
 
     public List<TrackingEventDTO> getHistory(Long trackingId) {
+        trackingExists(trackingId);
         List<TrackingEvent> events = eventRepository.findByTrackingIdOrderByEventTimeAsc(trackingId);
         if (events.isEmpty()) {
             throw new ResponseStatusException(
@@ -86,5 +88,11 @@ public class TrackingService {
                 event.getLatitude(),
                 event.getLongitude(),
                 event.getEventTime().toString())).toList();
+    }
+
+    private void trackingExists(Long trackingId) {
+        if (!trackingRepository.existsById(trackingId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tracking not found");
+        }
     }
 }
