@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.felipesantos.livetrack.model.Tracking;
+import com.felipesantos.livetrack.dto.TrackingDTO;
+import com.felipesantos.livetrack.dto.TrackingEventDTO;
 import com.felipesantos.livetrack.model.TrackingEvent;
 import com.felipesantos.livetrack.service.TrackingService;
 
@@ -23,12 +24,12 @@ public class TrackingController {
     private final TrackingService service;
 
     @PostMapping
-    public Tracking createTracking() {
+    public TrackingDTO createTracking() {
         return service.createTracking();
     }
 
     @PostMapping("/{id}/event")
-    public TrackingEvent addEvent(
+    public TrackingEventDTO addEvent(
             @PathVariable Long id,
             @RequestBody TrackingEvent event
     ) {
@@ -36,12 +37,12 @@ public class TrackingController {
     }
 
     @GetMapping("/{id}")
-    public TrackingEvent getLast(@PathVariable Long id) {
+    public TrackingEventDTO getLast(@PathVariable Long id) {
         return service.getLastLocation(id);
     }
 
     @GetMapping("/{id}/history")
-    public List<TrackingEvent> history(@PathVariable Long id) {
+    public List<TrackingEventDTO> history(@PathVariable Long id) {
         return service.getHistory(id);
     }
 }

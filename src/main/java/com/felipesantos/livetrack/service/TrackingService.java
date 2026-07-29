@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.felipesantos.livetrack.dto.TrackingDTO;
+import com.felipesantos.livetrack.dto.TrackingEventDTO;
 import com.felipesantos.livetrack.model.Tracking;
 import com.felipesantos.livetrack.model.TrackingEvent;
 import com.felipesantos.livetrack.repository.TrackingEventRepository;
@@ -23,21 +25,22 @@ public class TrackingService {
     private final TrackingRepository trackingRepository;
     private final TrackingWebSocketController wsController;
 
-
-    public Tracking createTracking() {
+    public TrackingDTO createTracking() {
         Tracking tracking = new Tracking();
         tracking.setStatus("ACTIVE");
         tracking.setCreatedAt(LocalDateTime.now());
-        return trackingRepository.save(tracking);
+        trackingRepository.save(tracking);
+        return new TrackingDTO(
+                tracking.getId(),
+                tracking.getStatus(),
+                tracking.getCreatedAt().toString());
     }
 
-    public TrackingEvent addEvent(Long trackingId, TrackingEvent event) {
-
-        Tracking tracking = trackingRepository.findById(trackingId)
-                .orElseThrow(() -> new ResponseStatusException(
-        HttpStatus.NOT_FOUND,
-        "Tracking not found"
-        ));
+    public TrackingEventDTO addEvent(Long trackingId, TrackingEvent event) {
+        Tracking tracking = trackingRepository.findById(trackingId).orElse(null);
+        if (tracking == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tracking not found");
+        }
 
         event.setTracking(tracking);
         event.setEventTime(LocalDateTime.now());
@@ -45,18 +48,43 @@ public class TrackingService {
         TrackingEvent saved = eventRepository.save(event);
 
         wsController.sendLocation(trackingId, saved);
+        trackingRepository.save(tracking);
 
-        return saved;
+        return new TrackingEventDTO(
+                saved.getId(),
+                saved.getTracking().getId(),
+                saved.getLatitude(),
+                saved.getLongitude(),
+                saved.getEventTime().toString());
     }
 
-    public TrackingEvent getLastLocation(Long trackingId) {
-        return eventRepository
-                .findTopByTracking_IdOrderByEventTimeDesc(trackingId);
+    public TrackingEventDTO getLastLocation(Long trackingId) {
+        TrackingEvent lastEvent = eventRepository.findTopByTracking_IdOrderByEventTimeDesc(trackingId);
+        if (lastEvent == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "No events found for tracking ID: " + trackingId);
+        }
+        return new TrackingEventDTO(
+                lastEvent.getId(),
+                lastEvent.getTracking().getId(),
+                lastEvent.getLatitude(),
+                lastEvent.getLongitude(),
+                lastEvent.getEventTime().toString());
     }
 
-    public List<TrackingEvent> getHistory(Long trackingId) {
-        return eventRepository
-                .findByTrackingIdOrderByEventTimeAsc(trackingId);
+    public List<TrackingEventDTO> getHistory(Long trackingId) {
+        List<TrackingEvent> events = eventRepository.findByTrackingIdOrderByEventTimeAsc(trackingId);
+        if (events.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "No events found for tracking ID: " + trackingId);
+        }
+        return events.stream().map(event -> new TrackingEventDTO(
+                event.getId(),
+                event.getTracking().getId(),
+                event.getLatitude(),
+                event.getLongitude(),
+                event.getEventTime().toString())).toList();
     }
 }
-
